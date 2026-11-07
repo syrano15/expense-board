@@ -237,12 +237,12 @@
       return f;
     }
 
-    function txRow(title, meta, amount, badgeText, badgeCls, memo) {
+    function txRow(title, meta, amount, badgeText, badgeCls, memo, editMark) {
       var row = el("div", "tx-item");
       var left = el("div", "tx-left");
-      left.appendChild(el("div", "tx-title", title));
+      left.appendChild(el("div", "tx-title", title + (editMark ? " ✏️" : "")));
       left.appendChild(el("div", "tx-meta", meta));
-      if (memo) left.appendChild(el("div", "tx-memo", memo));
+      if (memo) left.appendChild(el("div", "tx-memo", "📝 " + memo));
       var right = el("div", "tx-right");
       right.appendChild(el("div", "tx-amount num", amount));
       if (badgeText) right.appendChild(el("span", "badge " + (badgeCls || ""), badgeText));
@@ -262,8 +262,8 @@
       var fixedSum = sum(fixed, "amount"), saveMonthly = sum(savings, "monthly"), saveBal = sum(savings, "balance");
 
       var head = el("header");
-      head.appendChild(el("h1", null, "자금 & 지출 대시보드"));
-      if (c.cycle) head.appendChild(el("div", "period-badge", "회기 " + fmtDate(c.cycle.start) + " ~ " + fmtDate(c.cycle.end)));
+      head.appendChild(el("h1", null, "💳 자금 & 지출 대시보드"));
+      if (c.cycle) head.appendChild(el("div", "period-badge", Number(String(c.cycle.start).split("-")[1]) + "월 회기 (" + fmtDate(c.cycle.start) + " ~ " + fmtDate(c.cycle.end) + ")"));
       app.appendChild(head);
 
       if (errs.length) {
@@ -292,15 +292,15 @@
         cd.appendChild(el("div", "card-sub", sub));
         return cd;
       }
-      grid.appendChild(card("이번 회기 쓴 돈", txSum, "spend", "일상 " + man(dailySum) + (bigSum ? " + 큰 지출 " + man(bigSum) : "")));
+      grid.appendChild(card("이번 달 직접 쓴 돈", txSum, "spend", "일상 " + man(dailySum) + (bigSum ? " + 큰 지출 " + man(bigSum) : "")));
       grid.appendChild(card("매달 나가는 고정비", fixedSum, "fixed", fixed.map(function (f) { return f.category + " " + man(f.amount); }).join(" + ")));
       grid.appendChild(card("매달 붓는 적금", saveMonthly, "save", savings.length + "개 · 총 잔액 " + man(saveBal)));
       app.appendChild(grid);
 
       var tabs = [
-        { id: "spend", label: "쓴 돈", count: tx.length },
-        { id: "fixed", label: "고정 지출", count: fixed.length },
-        { id: "save", label: "적금·저축", count: savings.length }
+        { id: "spend", label: "💳 직접 쓴 돈", count: tx.length },
+        { id: "fixed", label: "🏠 고정 지출", count: fixed.length },
+        { id: "save", label: "🏦 적금·저축", count: savings.length }
       ];
       var tabBar = el("div", "tabs"); tabBar.setAttribute("role", "tablist");
       var panels = {};
@@ -326,7 +326,7 @@
         var box = el("div", "tx-card");
         if (!list.length) box.appendChild(el("div", "empty", "아직 내역이 없습니다."));
         list.forEach(function (t) {
-          box.appendChild(txRow(t.merchant, fmtAt(t.at) + " · " + (t.method || ""), "-" + won(t.amount), t.category, CAT_CLASS[t.category], t.memo));
+          box.appendChild(txRow(t.merchant, fmtAt(t.at) + " · " + (t.method || ""), "-" + won(t.amount), t.category, CAT_CLASS[t.category], t.memo, true));
         });
         return box;
       }
@@ -337,9 +337,9 @@
         p1.appendChild(h2); p1.appendChild(txList(big));
       }
       if ((c.favorites || []).length) {
-        p1.appendChild(el("div", "panel-header sub-header", "자주 가는 곳"));
+        p1.appendChild(el("div", "panel-header sub-header", "📌 자주 가는 곳"));
         var fav = el("div", "favorites-box");
-        c.favorites.forEach(function (f) { fav.appendChild(el("span", "fav-tag", f.name + (f.note ? " · " + f.note : ""))); });
+        c.favorites.forEach(function (f) { fav.appendChild(el("span", "fav-tag", (f.icon ? f.icon + " " : "") + f.name + (f.note ? " (" + f.note + ")" : ""))); });
         p1.appendChild(fav);
       }
 
@@ -351,6 +351,7 @@
       fixed.forEach(function (f) { fbox.appendChild(txRow(f.name, "매월 " + f.day + "일 자동출금 · " + (f.bank || ""), "-" + won(f.amount), f.category, CAT_CLASS[f.category])); });
       if (!fixed.length) fbox.appendChild(el("div", "empty", "등록된 고정 지출이 없습니다."));
       p2.appendChild(fbox);
+      p2.appendChild(el("div", "note-box", "💡 고정 지출은 날짜가 되면 통장에서 자동 출금되도록 세팅되어 있습니다."));
 
       // 적금
       var p3 = el("div", "tab-panel"); panels.save = p3;
@@ -362,7 +363,13 @@
         sbox.appendChild(txRow(s.bank + " " + s.product, "매월 " + s.day + "일 자동이체 · " + rate + " · 만기 " + String(s.maturity).replace(/-/g, "."), won(s.balance), "매월 " + s.day + "일 " + man(s.monthly), "c-save"));
       });
       p3.appendChild(sbox);
-      p3.appendChild(el("div", "note-box", "매달 적금에 " + won(saveMonthly) + "씩 모으고 있습니다."));
+      var sn = el("div", "note-box");
+      sn.appendChild(document.createTextNode("🏦 "));
+      sn.appendChild(el("strong", null, "매달 정기 저축"));
+      sn.appendChild(document.createTextNode(": " + savings.map(function (s) { return String(s.product).replace(/\s+/g, "").replace(/(저축|적금)$/, "") + "(" + pad(s.day) + "일 " + man(s.monthly) + ")"; }).join(" + ") + " = "));
+      sn.appendChild(el("strong", "num", "매월 총 " + won(saveMonthly)));
+      sn.appendChild(document.createTextNode("씩 적금에 모으고 계십니다!"));
+      p3.appendChild(sn);
 
       ["spend", "fixed", "save"].forEach(function (k) { panels[k].id = "panel-" + k; panels[k].setAttribute("role", "tabpanel"); panels[k].setAttribute("aria-labelledby", "tab-" + k); app.appendChild(panels[k]); });
 
