@@ -118,6 +118,7 @@
     .note-box strong { color: var(--text); }
 
     .alert { background: #FFF7E6; border: 1px solid #F5C26B; color: #7A4100; border-radius: 12px; padding: 12px 14px; font-size: 13px; margin-bottom: 14px; }
+    .token-alert { font-size: 14px; font-weight: 700; line-height: 1.55; }
     .alert.error { background: #FEF3F2; border-color: #FDA29B; color: #B42318; }
     .alert ul { margin: 6px 0 0 16px; }
 
@@ -155,6 +156,22 @@
     var CATS = ["식비","카페·간식","장보기","생활","교통","육아","선물·경조","문화·취미","의료","주거","보험","기타"];
     var CAT_CLASS = { "식비":"c-food","카페·간식":"c-food","장보기":"c-food","선물·경조":"c-gift","주거":"c-home","보험":"c-bill","의료":"c-bill" };
     var app = document.getElementById("app");
+    var TOKEN_EXPIRES = "2027-11-06";   /* 피클이 Gist에 쓰는 GitHub 토큰 만료일 */
+    var TOKEN_WARN_DAYS = 30;
+    function tokenWarning() {
+      var t = new Date(Date.now() + 9 * 3600 * 1000);
+      var today = Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate());
+      var a = TOKEN_EXPIRES.split("-").map(Number);
+      var left = Math.round((Date.UTC(a[0], a[1] - 1, a[2]) - today) / 864e5);
+      if (left > TOKEN_WARN_DAYS) return null;
+      var box = document.createElement("div");
+      box.className = "alert error token-alert";
+      box.setAttribute("role", "alert");
+      box.textContent = left > 0
+        ? "⚠️ 피클의 GitHub 토큰 만료가 " + left + "일 남았습니다 (" + TOKEN_EXPIRES + "). 만료되면 피클이 데이터를 갱신하지 못합니다. 클로드에게 문의하세요!"
+        : "⚠️ 피클의 GitHub 토큰이 만료됐습니다 (" + TOKEN_EXPIRES + "). 지금 화면은 마지막으로 저장된 데이터입니다. 클로드에게 문의하세요!";
+      return box;
+    }
 
     function el(tag, cls, text) {
       var e = document.createElement(tag);
@@ -296,6 +313,8 @@
       head.appendChild(el("h1", null, "💳 자금 & 지출 대시보드"));
       if (c.cycle) head.appendChild(el("div", "period-badge", Number(String(c.cycle.start).split("-")[1]) + "월 회기 (" + fmtDate(c.cycle.start) + " ~ " + fmtDate(c.cycle.end) + ")"));
       app.appendChild(head);
+
+      var tw = tokenWarning(); if (tw) app.appendChild(tw);
 
       if (errs.length) {
         var al = el("div", "alert");
