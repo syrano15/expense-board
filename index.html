@@ -69,7 +69,7 @@
     .card-title .ico { color: var(--k); }
     .card-value { font-size: 28px; font-weight: 800; letter-spacing: -0.8px; color: var(--text); line-height: 1.2; position: relative; z-index: 1; }
     .card-value.spend, .card-value.fixed, .card-value.save { color: var(--text); }
-    .card-sub { font-size: 13px; color: var(--text-muted); margin-top: 6px; font-weight: 500; position: relative; z-index: 1; padding-right: 40px; }
+    .card-sub { word-break: keep-all; font-size: 13px; color: var(--text-muted); margin-top: 6px; font-weight: 500; position: relative; z-index: 1; padding-right: 40px; }
     .card-art { position: absolute; right: 14px; bottom: 12px; width: 58px; height: 58px; color: var(--k); opacity: .16; stroke-width: 1.4; }
 
     .tabs { display: flex; background: var(--panel); border: 1px solid var(--line); padding: 5px; border-radius: 14px; gap: 4px; margin-bottom: 18px; box-shadow: var(--shadow); }
@@ -390,7 +390,12 @@
         return cd;
       }
       grid.appendChild(card("이번 달 직접 쓴 돈", txSum, "spend", "일상 " + man(dailySum) + (bigSum ? " + 큰 지출 " + man(bigSum) : "")));
-      grid.appendChild(card("매달 나가는 고정비", fixedSum, "fixed", fixed.map(function (f) { return f.category + " " + man(f.amount); }).join(" + ")));
+      grid.appendChild(card("매달 나가는 고정비", fixedSum, "fixed", (function () {
+        var g = {}, order = [];
+        fixed.forEach(function (f) { var k = f.category || "기타"; if (!(k in g)) { g[k] = 0; order.push(k); } g[k] += Number(f.amount) || 0; });
+        order.sort(function (x, y) { return g[y] - g[x]; });
+        return order.map(function (k) { return k + "\u00a0" + man(g[k]); }).join(" + ");
+      })()));
       grid.appendChild(card("매달 붓는 적금", saveMonthly, "save", savings.length + "개 · 총 잔액 " + man(saveBal)));
       app.appendChild(grid);
 
