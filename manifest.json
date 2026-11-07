@@ -7,8 +7,8 @@
   "id": "expense-board",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#f1f4f8",
-  "theme_color": "#f1f4f8",
+  "background_color": "#F2F5F7",
+  "theme_color": "#F2F5F7",
   "lang": "ko",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
